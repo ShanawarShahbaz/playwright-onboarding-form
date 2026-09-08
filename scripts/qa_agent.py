@@ -87,8 +87,9 @@ class OnboardingFormQA(unittest.TestCase):
         self.assertEqual(active.locator(".step-counter").inner_text(), f"{number} / 12")
 
     def advance_with_text(self, value: str) -> None:
-        self.page.locator(".step.is-active .step-input").fill(value)
-        self.page.keyboard.press("Enter")
+        field = self.page.locator(".step.is-active .step-input")
+        field.fill(value)
+        field.press("Enter")
         self.page.wait_for_timeout(150)
 
     def advance_with_select(self, label: str) -> None:
@@ -97,12 +98,13 @@ class OnboardingFormQA(unittest.TestCase):
         self.page.wait_for_timeout(150)
 
     def advance_with_textarea(self, value: str) -> None:
-        self.page.locator(".step.is-active .step-textarea").fill(value)
-        self.page.keyboard.press("Control+Enter")
+        field = self.page.locator(".step.is-active .step-textarea")
+        field.fill(value)
+        field.press("Control+Enter")
         self.page.wait_for_timeout(150)
 
     def advance_empty(self, key: str = "Enter") -> None:
-        self.page.keyboard.press(key)
+        self.page.locator(".step.is-active .step-input").press(key)
         self.page.wait_for_timeout(150)
 
     def complete_questions(self) -> None:
@@ -187,6 +189,8 @@ class OnboardingFormQA(unittest.TestCase):
         self.assertEqual(review.locator(".review-item").count(), 12)
         self.assertEqual(review.locator(".review-answer").nth(0).inner_text(), "Ada")
         self.assertEqual(review.locator(".review-answer").nth(2).inner_text(), "Not provided")
+        progress = self.page.locator("#progress-bar-fill").evaluate("el => el.style.width")
+        self.assertLess(float(progress.rstrip("%")), 100)
 
         review.locator(".review-edit").nth(0).click()
         self.active_step(1)
