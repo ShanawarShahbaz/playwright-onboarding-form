@@ -71,6 +71,14 @@ python3 scripts/automate_form.py
 
 Fills all 12 form fields in a visible browser window, asserts the thank-you screen, saves `screenshots/form_completed.png`, and verifies the restart flow.
 
+### Run the end-to-end QA agent
+
+```bash
+python3 scripts/qa_agent.py
+```
+
+Runs the critical end-to-end regression cases headlessly against an isolated local server and prints a pass/fail result for each case. Use `--headed` to watch it run. See [docs/QA_AGENT.md](docs/QA_AGENT.md) for its coverage and how to point it at a deployed URL.
+
 ### Take a screenshot of any URL
 
 ```bash
@@ -95,6 +103,7 @@ Navigates to Hacker News, prints the top 10 story titles, and saves a screenshot
 ├── app.js                  # 12-question form logic (vanilla JS, no framework)
 ├── scripts/
 │   ├── automate_form.py    # Playwright test: drives the full onboarding form
+│   ├── qa_agent.py         # Self-contained end-to-end regression suite
 │   ├── automate.py         # Demo: scrapes Hacker News in a visible browser
 │   └── screenshot.py       # CLI: headless full-page screenshots of any URL
 ├── screenshots/
