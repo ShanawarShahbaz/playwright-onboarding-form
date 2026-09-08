@@ -79,6 +79,8 @@ python3 scripts/qa_agent.py
 
 Runs the critical end-to-end regression cases headlessly against an isolated local server and prints a pass/fail result for each case. Use `--headed` to watch it run. See [docs/QA_AGENT.md](docs/QA_AGENT.md) for its coverage and how to point it at a deployed URL.
 
+The same suite runs automatically in GitHub Actions for every pull request and every push to `main`; a failed workflow should be required before merging through the repository's branch protection settings.
+
 ### Take a screenshot of any URL
 
 ```bash
