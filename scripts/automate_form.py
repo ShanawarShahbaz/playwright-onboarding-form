@@ -1,5 +1,5 @@
 """
-Playwright test: drives all 12 steps of the onboarding form automatically.
+Playwright test: drives the onboarding form and confirms its answer review.
 
 Prerequisites:
   python3 -m http.server 8080   (run from repo root, in a separate terminal)
@@ -60,6 +60,13 @@ def run():
 
             # Wait for slide transition (450ms) to settle
             page.wait_for_timeout(550)
+
+        # Review answers before final submission
+        review = page.locator(".step--review.is-active")
+        assert review.is_visible(), "ERROR: Submission review did not appear!"
+        assert review.locator(".review-item").count() == TOTAL, "ERROR: Review is incomplete!"
+        page.locator(".btn-submit").click()
+        page.wait_for_timeout(550)
 
         # Verify thank-you screen
         ty = page.locator(".step--thankyou.is-active .thankyou-title")

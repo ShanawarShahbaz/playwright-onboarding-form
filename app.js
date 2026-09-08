@@ -98,6 +98,9 @@ const QUESTIONS = [
 ];
 
 const TOTAL = QUESTIONS.length;
+const REVIEW_STEP = TOTAL;
+const THANK_YOU_STEP = TOTAL + 1;
+const JOURNEY_STEP_COUNT = THANK_YOU_STEP + 1;
 let current = 0;
 const answers = {};
 
@@ -161,10 +164,26 @@ function buildSteps() {
     container.appendChild(step);
   });
 
+  // Submission review screen
+  const review = document.createElement('div');
+  review.className = 'step step--review';
+  review.dataset.step = REVIEW_STEP;
+  review.innerHTML = `
+    <span class="step-counter">Review &amp; submit</span>
+    <h1 class="step-question">Check your answers</h1>
+    <p class="review-intro">Make sure everything looks right before submitting.</p>
+    <div class="review-list" role="list" aria-live="polite"></div>
+    <div class="review-actions">
+      <button class="btn-review-back" type="button">Back to last question</button>
+      <button class="btn-next btn-submit" type="button">Confirm &amp; submit &rarr;</button>
+    </div>
+  `;
+  container.appendChild(review);
+
   // Thank-you screen
   const ty = document.createElement('div');
   ty.className = 'step step--thankyou';
-  ty.dataset.step = TOTAL;
+  ty.dataset.step = THANK_YOU_STEP;
   ty.innerHTML = `
     <div class="thankyou-icon">✓</div>
     <h1 class="thankyou-title">You're all set!</h1>
@@ -178,6 +197,35 @@ function buildSteps() {
 
 function allSteps() {
   return document.querySelectorAll('.step');
+}
+
+function renderReview() {
+  const list = document.querySelector('.review-list');
+  list.replaceChildren();
+
+  QUESTIONS.forEach((question, index) => {
+    const item = document.createElement('div');
+    item.className = 'review-item';
+
+    const label = document.createElement('p');
+    label.className = 'review-label';
+    label.textContent = question.label;
+
+    const value = document.createElement('p');
+    value.className = 'review-answer';
+    value.textContent = answers[question.id] || 'Not provided';
+
+    const edit = document.createElement('button');
+    edit.className = 'review-edit';
+    edit.type = 'button';
+    edit.dataset.editStep = index;
+    edit.setAttribute('aria-label', `Edit ${question.label}`);
+    edit.textContent = 'Edit';
+
+    item.setAttribute('role', 'listitem');
+    item.append(label, value, edit);
+    list.appendChild(item);
+  });
 }
 
 function goToStep(nextIndex) {
@@ -195,18 +243,20 @@ function goToStep(nextIndex) {
   current = nextIndex;
   steps[current].classList.add('is-active');
 
-  // Focus input after slide-in starts
+  if (current === REVIEW_STEP) renderReview();
+
+  // Focus the first interactive element after slide-in starts
   setTimeout(() => {
-    const input = steps[current].querySelector('.step-input');
-    if (input) input.focus();
+    const focusable = steps[current].querySelector('.step-input, button');
+    if (focusable) focusable.focus();
   }, 80);
 
   updateProgress();
 }
 
 function updateProgress() {
-  // +1 in numerator so step 1 shows a visible sliver; TOTAL+1 keeps 100% for thank-you screen
-  const pct = ((current + 1) / (TOTAL + 1)) * 100;
+  // Keep a visible sliver at step 1 and reserve the final 100% state for completion.
+  const pct = ((current + 1) / JOURNEY_STEP_COUNT) * 100;
   document.getElementById('progress-bar-fill').style.width = pct + '%';
 }
 
@@ -245,7 +295,11 @@ function showError(input, errorEl, message) {
 // ── Advance ───────────────────────────────────────────────────
 
 function tryAdvance() {
-  if (current >= TOTAL) return;
+  if (current === REVIEW_STEP) {
+    goToStep(THANK_YOU_STEP);
+    return;
+  }
+  if (current >= THANK_YOU_STEP) return;
   if (!validate(current)) return;
   goToStep(current + 1);
 }
@@ -291,8 +345,13 @@ document.addEventListener('keydown', e => {
 });
 
 document.getElementById('form-container').addEventListener('click', e => {
-  if (e.target.matches('.btn-next'))    tryAdvance();
-  if (e.target.matches('.btn-restart')) resetForm();
+  const button = e.target.closest('button');
+  if (!button) return;
+
+  if (button.matches('.btn-next'))        tryAdvance();
+  if (button.matches('.btn-review-back')) goToStep(TOTAL - 1);
+  if (button.matches('.review-edit'))     goToStep(Number(button.dataset.editStep));
+  if (button.matches('.btn-restart'))     resetForm();
 });
 
 // ── Init ──────────────────────────────────────────────────────

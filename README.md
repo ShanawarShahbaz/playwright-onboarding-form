@@ -1,6 +1,6 @@
 # Playwright Onboarding Form
 
-A Typeform-style multi-step onboarding form — 12 questions, one per screen, smooth slide animations — with full Playwright browser automation and screenshot testing.
+A Typeform-style multi-step onboarding form — 12 questions, one per screen, a final answer review, and smooth slide animations — with full Playwright browser automation and screenshot testing.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-1.60-45ba4b?logo=playwright&logoColor=white)
@@ -19,7 +19,7 @@ A Typeform-style multi-step onboarding form — 12 questions, one per screen, sm
 
 ## What This Demonstrates
 
-- **Multi-step form UX** — progress bar, keyboard-first navigation (Enter to advance), slide + fade transitions between steps
+- **Multi-step form UX** — progress bar, keyboard-first navigation (Enter to advance), answer review before submission, slide + fade transitions
 - **Glassmorphism UI** — `backdrop-filter` blur, CSS custom properties, responsive layout — no framework, no build step
 - **Playwright form automation** — filling text inputs, selects, textareas, and date fields programmatically
 - **Assertion testing** — verifies the thank-you screen appears and the restart flow works
@@ -69,7 +69,7 @@ With the server running in one terminal, open a second terminal:
 python3 scripts/automate_form.py
 ```
 
-Fills all 12 form fields in a visible browser window, asserts the thank-you screen, saves `screenshots/form_completed.png`, and verifies the restart flow.
+Fills all 12 form fields in a visible browser window, verifies the answer-review screen, confirms submission, saves `screenshots/form_completed.png`, and verifies the restart flow.
 
 ### Run the end-to-end QA agent
 
@@ -83,7 +83,7 @@ The same suite runs automatically in GitHub Actions for every pull request and e
 
 ### Enable the AI PR review agent
 
-The repository also includes an advisory reviewer that reads each same-repository pull-request diff and maintains one review comment. Add an `OPENAI_API_KEY` repository secret before enabling it. See [docs/PR_REVIEW_AGENT.md](docs/PR_REVIEW_AGENT.md) for security boundaries and setup.
+The repository also includes an advisory reviewer that reads each same-repository pull-request diff and maintains one review comment. It reports token usage and an estimated per-review USD cost. Add an `OPENAI_API_KEY` repository secret before enabling it. See [docs/PR_REVIEW_AGENT.md](docs/PR_REVIEW_AGENT.md) for security boundaries, setup, and cost tracking.
 
 ### Take a screenshot of any URL
 
@@ -127,7 +127,7 @@ Navigates to Hacker News, prints the top 10 story titles, and saves a screenshot
 | File | Description |
 |---|---|
 | [docs/PROMPTS.md](docs/PROMPTS.md) | Full prompt log — every user prompt, what was built, and the outcome |
-| [docs/TEST_CASES.md](docs/TEST_CASES.md) | 63 one-line test cases covering the form, keyboard handling, validation, and all Playwright scripts |
+| [docs/TEST_CASES.md](docs/TEST_CASES.md) | 66 one-line test cases covering the form, keyboard handling, validation, review flow, and Playwright scripts |
 
 ---
 

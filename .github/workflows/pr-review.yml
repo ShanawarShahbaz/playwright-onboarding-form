@@ -26,6 +26,9 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-5.4-mini
+          OPENAI_INPUT_USD_PER_M_TOKENS: "0.75"
+          OPENAI_CACHED_INPUT_USD_PER_M_TOKENS: "0.075"
+          OPENAI_OUTPUT_USD_PER_M_TOKENS: "4.50"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -99,10 +102,56 @@ jobs:
               return;
             }
 
+            const usage = result.usage || {};
+            const inputTokens = usage.input_tokens;
+            const cachedInputTokens = usage.input_tokens_details?.cached_tokens;
+            const outputTokens = usage.output_tokens;
+            const hasUsage = Number.isFinite(inputTokens) && Number.isFinite(outputTokens);
+            const hasCachedUsage = Number.isFinite(cachedInputTokens);
+            const safeInputTokens = hasUsage ? inputTokens : 0;
+            const safeCachedInputTokens = hasCachedUsage ? cachedInputTokens : 0;
+            const safeOutputTokens = hasUsage ? outputTokens : 0;
+            const uncachedInputTokens = Math.max(0, safeInputTokens - safeCachedInputTokens);
+            const inputRate = Number(process.env.OPENAI_INPUT_USD_PER_M_TOKENS);
+            const cachedInputRate = Number(process.env.OPENAI_CACHED_INPUT_USD_PER_M_TOKENS);
+            const outputRate = Number(process.env.OPENAI_OUTPUT_USD_PER_M_TOKENS);
+            const configuredModel = process.env.OPENAI_MODEL;
+            const returnedModel = result.model || configuredModel;
+            const modelMatchesConfiguredRates = returnedModel === configuredModel
+              || returnedModel.startsWith(`${configuredModel}-`);
+            const hasConfiguredRates = [inputRate, cachedInputRate, outputRate].every(Number.isFinite);
+            const estimatedCost = hasUsage && modelMatchesConfiguredRates && hasConfiguredRates ? (
+              (uncachedInputTokens * inputRate)
+              + (safeCachedInputTokens * cachedInputRate)
+              + (safeOutputTokens * outputRate)
+            ) / 1_000_000 : null;
+            const usd = Number.isFinite(estimatedCost) && estimatedCost !== null
+              ? new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 6,
+            }).format(estimatedCost)
+              : 'unavailable (returned model or usage does not match configured rates)';
+            const usageSummary = `Model: ${returnedModel} · `
+              + `input: ${hasUsage ? safeInputTokens.toLocaleString() : 'not reported'} tokens `
+              + `(cached: ${hasCachedUsage ? safeCachedInputTokens.toLocaleString() : 'not reported'}) · `
+              + `output: ${hasUsage ? safeOutputTokens.toLocaleString() : 'not reported'} tokens · `
+              + `configured-rate estimate: ${usd}`;
+
+            await core.summary
+              .addHeading('AI PR review usage')
+              .addRaw(usageSummary)
+              .addEOL()
+              .addRaw('Estimate uses the workflow token rates and excludes taxes, credits, and any account-specific pricing adjustments.')
+              .write();
+
             const body = `${marker}
             ## AI PR review
 
             ${review}
+
+            <sub>${usageSummary}. Estimate excludes taxes, credits, and account-specific pricing adjustments.</sub>
 
             _This is advisory feedback. The Playwright regression suite remains the merge gate._`;
 
