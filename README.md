@@ -81,6 +81,10 @@ Runs the critical end-to-end regression cases headlessly against an isolated loc
 
 The same suite runs automatically in GitHub Actions for every pull request and every push to `main`; a failed workflow should be required before merging through the repository's branch protection settings.
 
+### Enable the AI PR review agent
+
+The repository also includes an advisory reviewer that reads each same-repository pull-request diff and maintains one review comment. Add an `OPENAI_API_KEY` repository secret before enabling it. See [docs/PR_REVIEW_AGENT.md](docs/PR_REVIEW_AGENT.md) for security boundaries and setup.
+
 ### Take a screenshot of any URL
 
 ```bash
