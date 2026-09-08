@@ -172,7 +172,7 @@ function buildSteps() {
     <span class="step-counter">Review &amp; submit</span>
     <h1 class="step-question">Check your answers</h1>
     <p class="review-intro">Make sure everything looks right before submitting.</p>
-    <dl class="review-list" aria-live="polite"></dl>
+    <div class="review-list" role="list" aria-live="polite"></div>
     <div class="review-actions">
       <button class="btn-review-back" type="button">Back to last question</button>
       <button class="btn-next btn-submit" type="button">Confirm &amp; submit &rarr;</button>
@@ -207,11 +207,11 @@ function renderReview() {
     const item = document.createElement('div');
     item.className = 'review-item';
 
-    const label = document.createElement('dt');
+    const label = document.createElement('p');
     label.className = 'review-label';
     label.textContent = question.label;
 
-    const value = document.createElement('dd');
+    const value = document.createElement('p');
     value.className = 'review-answer';
     value.textContent = answers[question.id] || 'Not provided';
 
@@ -222,6 +222,7 @@ function renderReview() {
     edit.setAttribute('aria-label', `Edit ${question.label}`);
     edit.textContent = 'Edit';
 
+    item.setAttribute('role', 'listitem');
     item.append(label, value, edit);
     list.appendChild(item);
   });

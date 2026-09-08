@@ -103,29 +103,41 @@ jobs:
             }
 
             const usage = result.usage || {};
-            const inputTokens = usage.input_tokens || 0;
-            const cachedInputTokens = usage.input_tokens_details?.cached_tokens || 0;
-            const outputTokens = usage.output_tokens || 0;
-            const uncachedInputTokens = Math.max(0, inputTokens - cachedInputTokens);
+            const inputTokens = usage.input_tokens;
+            const cachedInputTokens = usage.input_tokens_details?.cached_tokens;
+            const outputTokens = usage.output_tokens;
+            const hasUsage = Number.isFinite(inputTokens) && Number.isFinite(outputTokens);
+            const hasCachedUsage = Number.isFinite(cachedInputTokens);
+            const safeInputTokens = hasUsage ? inputTokens : 0;
+            const safeCachedInputTokens = hasCachedUsage ? cachedInputTokens : 0;
+            const safeOutputTokens = hasUsage ? outputTokens : 0;
+            const uncachedInputTokens = Math.max(0, safeInputTokens - safeCachedInputTokens);
             const inputRate = Number(process.env.OPENAI_INPUT_USD_PER_M_TOKENS);
             const cachedInputRate = Number(process.env.OPENAI_CACHED_INPUT_USD_PER_M_TOKENS);
             const outputRate = Number(process.env.OPENAI_OUTPUT_USD_PER_M_TOKENS);
-            const estimatedCost = (
+            const configuredModel = process.env.OPENAI_MODEL;
+            const returnedModel = result.model || configuredModel;
+            const modelMatchesConfiguredRates = returnedModel === configuredModel
+              || returnedModel.startsWith(`${configuredModel}-`);
+            const hasConfiguredRates = [inputRate, cachedInputRate, outputRate].every(Number.isFinite);
+            const estimatedCost = hasUsage && modelMatchesConfiguredRates && hasConfiguredRates ? (
               (uncachedInputTokens * inputRate)
-              + (cachedInputTokens * cachedInputRate)
-              + (outputTokens * outputRate)
-            ) / 1_000_000;
-            const usd = new Intl.NumberFormat('en-US', {
+              + (safeCachedInputTokens * cachedInputRate)
+              + (safeOutputTokens * outputRate)
+            ) / 1_000_000 : null;
+            const usd = Number.isFinite(estimatedCost) && estimatedCost !== null
+              ? new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: 'USD',
               minimumFractionDigits: 4,
               maximumFractionDigits: 6,
-            }).format(estimatedCost);
-            const usageSummary = `Model: ${result.model || process.env.OPENAI_MODEL} · `
-              + `input: ${inputTokens.toLocaleString()} tokens `
-              + `(cached: ${cachedInputTokens.toLocaleString()}) · `
-              + `output: ${outputTokens.toLocaleString()} tokens · `
-              + `estimated cost: ${usd}`;
+            }).format(estimatedCost)
+              : 'unavailable (returned model or usage does not match configured rates)';
+            const usageSummary = `Model: ${returnedModel} · `
+              + `input: ${hasUsage ? safeInputTokens.toLocaleString() : 'not reported'} tokens `
+              + `(cached: ${hasCachedUsage ? safeCachedInputTokens.toLocaleString() : 'not reported'}) · `
+              + `output: ${hasUsage ? safeOutputTokens.toLocaleString() : 'not reported'} tokens · `
+              + `configured-rate estimate: ${usd}`;
 
             await core.summary
               .addHeading('AI PR review usage')

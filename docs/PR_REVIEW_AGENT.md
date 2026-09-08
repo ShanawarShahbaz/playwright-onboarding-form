@@ -34,6 +34,7 @@ USD cost for that single review. The default `gpt-5.4-mini` rates are stored in
 the workflow as `OPENAI_*_USD_PER_M_TOKENS` values. Update both the model and
 those rates together if you choose another model.
 
-This is a per-run estimate, not the billing record: it excludes taxes, credits,
-and account-specific pricing adjustments. Use the OpenAI Platform usage and
-billing pages as the source of truth for cumulative spend.
+This is a per-run estimate, not the billing record: it is shown only when the
+returned model and usage data match the configured rates, and it excludes taxes,
+credits, and account-specific pricing adjustments. Use the OpenAI Platform
+usage and billing pages as the source of truth for cumulative spend.
