@@ -89,29 +89,37 @@ class OnboardingFormQA(unittest.TestCase):
     def advance_with_text(self, value: str) -> None:
         self.page.locator(".step.is-active .step-input").fill(value)
         self.page.keyboard.press("Enter")
+        self.page.wait_for_timeout(150)
 
     def advance_with_select(self, label: str) -> None:
         self.page.locator(".step.is-active .step-select").select_option(label=label)
         self.page.locator(".step.is-active .btn-next").click()
+        self.page.wait_for_timeout(150)
 
     def advance_with_textarea(self, value: str) -> None:
         self.page.locator(".step.is-active .step-textarea").fill(value)
         self.page.keyboard.press("Control+Enter")
+        self.page.wait_for_timeout(150)
 
-    def finish_form(self) -> None:
+    def advance_empty(self, key: str = "Enter") -> None:
+        self.page.keyboard.press(key)
+        self.page.wait_for_timeout(150)
+
+    def complete_questions(self) -> None:
         """Complete required fields and deliberately skip all optional fields."""
         self.advance_with_text("Ada")                  # q1, required
         self.advance_with_text("Lovelace")             # q2, required
-        self.page.keyboard.press("Enter")              # q3, optional phone
+        self.advance_empty()                             # q3, optional phone
         self.advance_with_text("Analytical Engines")    # q4, required
         self.advance_with_text("Engineer")              # q5, required
         self.advance_with_select("Technology / SaaS")   # q6, required
         self.advance_with_select("2–10")                # q7, required
-        self.page.keyboard.press("Enter")              # q8, optional
+        self.advance_empty()                             # q8, optional
         self.advance_with_textarea("Turning interested visitors into customers.")
         self.advance_with_textarea("Grow recurring revenue sustainably.")
         self.page.locator(".step.is-active .btn-next").click()  # q11, optional date
-        self.page.keyboard.press("Control+Enter")       # q12, optional textarea
+        self.page.wait_for_timeout(150)
+        self.advance_empty("Control+Enter")             # q12, optional textarea
 
     def test_tc_01_initial_render_and_accessible_labels(self) -> None:
         """TC-01/02/26-30: initial UI, progress, and optional indicators."""
@@ -119,7 +127,7 @@ class OnboardingFormQA(unittest.TestCase):
         self.assertEqual(self.page.locator("label[for='q1']").inner_text(), "What's your first name?")
         self.assertEqual(self.page.locator(".step-optional").count(), 4)
         progress = self.page.locator("#progress-bar-fill").evaluate("el => el.style.width")
-        self.assertAlmostEqual(float(progress.rstrip("%")), 100 / 13, places=4)
+        self.assertAlmostEqual(float(progress.rstrip("%")), 100 / 14, places=4)
 
     def test_tc_17_required_fields_block_navigation_then_recover(self) -> None:
         """TC-17/19: required validation shows an error and valid input clears it."""
@@ -149,7 +157,7 @@ class OnboardingFormQA(unittest.TestCase):
         """TC-13-16/31-35: textarea shortcuts and required select behavior."""
         self.advance_with_text("Ada")
         self.advance_with_text("Lovelace")
-        self.page.keyboard.press("Enter")
+        self.advance_empty()
         self.advance_with_text("Analytical Engines")
         self.advance_with_text("Engineer")
         self.active_step(6)
@@ -160,20 +168,54 @@ class OnboardingFormQA(unittest.TestCase):
         self.assertIn("required", self.page.locator(".step.is-active .step-error").inner_text())
         self.advance_with_select("Technology / SaaS")
         self.advance_with_select("2–10")
-        self.page.keyboard.press("Enter")
+        self.advance_empty()
         self.active_step(9)
 
         textarea = self.page.locator(".step.is-active .step-textarea")
         textarea.fill("First line")
-        self.page.keyboard.press("Enter")
+        self.advance_empty()
         self.assertEqual(textarea.input_value(), "First line\n")
         self.active_step(9)
         self.page.keyboard.press("Control+Enter")
         self.active_step(10)
 
+    def test_tc_64_submission_review_can_edit_answers_before_confirming(self) -> None:
+        """TC-64-66: review shows all answers, supports editing, then confirms."""
+        self.complete_questions()
+        review = self.page.locator(".step--review.is-active")
+        self.assertTrue(review.is_visible())
+        self.assertEqual(review.locator(".review-item").count(), 12)
+        self.assertEqual(review.locator(".review-answer").nth(0).inner_text(), "Ada")
+        self.assertEqual(review.locator(".review-answer").nth(2).inner_text(), "Not provided")
+
+        review.locator(".review-edit").nth(0).click()
+        self.active_step(1)
+        self.assertEqual(self.page.locator("#q1").input_value(), "Ada")
+
+        # Existing answers remain available while navigating back to review.
+        self.advance_empty()
+        self.advance_empty()
+        self.advance_empty()
+        self.advance_empty()
+        self.advance_empty()
+        self.page.locator(".step.is-active .btn-next").click()
+        self.page.wait_for_timeout(150)
+        self.page.locator(".step.is-active .btn-next").click()
+        self.page.wait_for_timeout(150)
+        self.advance_empty()
+        self.advance_empty("Control+Enter")
+        self.advance_empty("Control+Enter")
+        self.page.locator(".step.is-active .btn-next").click()
+        self.page.wait_for_timeout(150)
+        self.advance_empty("Control+Enter")
+        self.assertTrue(self.page.locator(".step--review.is-active").is_visible())
+        self.page.locator(".btn-submit").click()
+        self.assertTrue(self.page.locator(".step--thankyou.is-active").is_visible())
+
     def test_tc_07_to_09_full_submission_progress_and_restart(self) -> None:
         """TC-07-09/24-25: full journey, completion state, and reset behavior."""
-        self.finish_form()
+        self.complete_questions()
+        self.page.locator(".btn-submit").click()
         thank_you = self.page.locator(".step--thankyou.is-active")
         self.assertTrue(thank_you.locator(".thankyou-title").is_visible())
         self.assertEqual(thank_you.locator(".thankyou-title").inner_text(), "You're all set!")

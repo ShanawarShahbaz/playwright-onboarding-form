@@ -26,7 +26,14 @@ code, so a changed workflow in the PR cannot access the API secret. Review fork
 PRs manually, or use a separate approval-gated workflow if you later need that
 capability.
 
-The workflow uses the Responses API with `store: false`, a 1,500-output-token
-limit, and the configurable `OPENAI_MODEL` workflow environment variable.
-`gpt-5.4-mini` is the default for this bounded code-review task; change the
-environment value if you want a different quality/cost trade-off.
+## Usage and cost tracking
+
+Every review comment and its GitHub Actions job summary show the model, input,
+cached-input, and output token counts returned by the API, plus an estimated
+USD cost for that single review. The default `gpt-5.4-mini` rates are stored in
+the workflow as `OPENAI_*_USD_PER_M_TOKENS` values. Update both the model and
+those rates together if you choose another model.
+
+This is a per-run estimate, not the billing record: it excludes taxes, credits,
+and account-specific pricing adjustments. Use the OpenAI Platform usage and
+billing pages as the source of truth for cumulative spend.

@@ -26,6 +26,9 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-5.4-mini
+          OPENAI_INPUT_USD_PER_M_TOKENS: "0.75"
+          OPENAI_CACHED_INPUT_USD_PER_M_TOKENS: "0.075"
+          OPENAI_OUTPUT_USD_PER_M_TOKENS: "4.50"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -99,10 +102,44 @@ jobs:
               return;
             }
 
+            const usage = result.usage || {};
+            const inputTokens = usage.input_tokens || 0;
+            const cachedInputTokens = usage.input_tokens_details?.cached_tokens || 0;
+            const outputTokens = usage.output_tokens || 0;
+            const uncachedInputTokens = Math.max(0, inputTokens - cachedInputTokens);
+            const inputRate = Number(process.env.OPENAI_INPUT_USD_PER_M_TOKENS);
+            const cachedInputRate = Number(process.env.OPENAI_CACHED_INPUT_USD_PER_M_TOKENS);
+            const outputRate = Number(process.env.OPENAI_OUTPUT_USD_PER_M_TOKENS);
+            const estimatedCost = (
+              (uncachedInputTokens * inputRate)
+              + (cachedInputTokens * cachedInputRate)
+              + (outputTokens * outputRate)
+            ) / 1_000_000;
+            const usd = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 6,
+            }).format(estimatedCost);
+            const usageSummary = `Model: ${result.model || process.env.OPENAI_MODEL} · `
+              + `input: ${inputTokens.toLocaleString()} tokens `
+              + `(cached: ${cachedInputTokens.toLocaleString()}) · `
+              + `output: ${outputTokens.toLocaleString()} tokens · `
+              + `estimated cost: ${usd}`;
+
+            await core.summary
+              .addHeading('AI PR review usage')
+              .addRaw(usageSummary)
+              .addEOL()
+              .addRaw('Estimate uses the workflow token rates and excludes taxes, credits, and any account-specific pricing adjustments.')
+              .write();
+
             const body = `${marker}
             ## AI PR review
 
             ${review}
+
+            <sub>${usageSummary}. Estimate excludes taxes, credits, and account-specific pricing adjustments.</sub>
 
             _This is advisory feedback. The Playwright regression suite remains the merge gate._`;
 

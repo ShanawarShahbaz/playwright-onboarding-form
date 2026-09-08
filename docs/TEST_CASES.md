@@ -13,7 +13,7 @@ One-line test cases covering the onboarding form and all Playwright automation s
 - `TC-05` Each step transition plays a slide-up and fade-in animation lasting ~450ms.
 - `TC-06` The step counter label (e.g. "3 / 12") updates correctly on every step.
 - `TC-07` The progress bar width increases with each step and reaches 100% on the thank-you screen.
-- `TC-08` Completing Step 12 (final textarea, Ctrl+Enter) displays the thank-you screen with a checkmark icon.
+- `TC-08` Confirming the submission review displays the thank-you screen with a checkmark icon.
 - `TC-09` Clicking "Start over" on the thank-you screen resets all inputs and returns to Step 1.
 
 ---
@@ -27,6 +27,14 @@ One-line test cases covering the onboarding form and all Playwright automation s
 - `TC-14` Pressing Ctrl+Enter inside a textarea advances to the next step.
 - `TC-15` Pressing Meta+Enter (Cmd+Enter on Mac) inside a textarea also advances the step.
 - `TC-16` Pressing Enter while a `<select>` is focused does NOT call tryAdvance — the browser handles the dropdown natively.
+
+---
+
+## Form — Submission Review
+
+- `TC-64` Completing Step 12 displays a review screen before submission.
+- `TC-65` The review screen lists every question, its saved answer, and "Not provided" for skipped optional answers.
+- `TC-66` Clicking an answer's "Edit" button returns to its populated form step; "Confirm & submit" then displays the thank-you screen.
 
 ---
 
@@ -79,7 +87,7 @@ One-line test cases covering the onboarding form and all Playwright automation s
 
 - `TC-42` Running `python3 scripts/automate_form.py` (with server running) opens a visible browser window.
 - `TC-43` The script fills all 12 form steps in sequence without any assertion failures.
-- `TC-44` After step 12, the script asserts that `.step--thankyou.is-active .thankyou-title` is visible.
+- `TC-44` After step 12, the script asserts the review screen contains all 12 answers, confirms submission, then asserts `.step--thankyou.is-active .thankyou-title` is visible.
 - `TC-45` The script saves a screenshot of the completed form to `screenshots/form_completed.png`.
 - `TC-46` The script clicks "Start over" and asserts the step counter returns to "1 / 12".
 - `TC-47` Text inputs are filled using `.fill(value)` then advanced with `keyboard.press("Enter")`.

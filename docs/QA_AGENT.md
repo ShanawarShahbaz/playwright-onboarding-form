@@ -10,7 +10,7 @@ It verifies:
 - required-field and telephone validation;
 - keyboard behavior for inputs and textareas;
 - select-field validation and navigation;
-- the complete submission journey, progress state, and restart reset; and
+- answer review, editing, the complete submission journey, progress state, and restart reset; and
 - the mobile full-width primary-action layout.
 
 Run it from the repository root:
